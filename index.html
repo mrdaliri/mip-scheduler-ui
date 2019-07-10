@@ -46,6 +46,19 @@
 <div class="container">
     <div class="row">
         <div class="col-lg-12">
+            <h2 class="mt-5">Resources Graph</h2>
+            <p class="lead">Define your resources and links</p>
+            <div class="card">
+                <div class="graph card-img-top" id="resources-graph"></div>
+                <div class="card-footer">
+                    <button type="button" class="btn btn-block btn-info" id="resources-graph-layout">Re-layout graph</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-12">
             <h2 class="mt-5">Queries Graph</h2>
             <p class="lead">Design your queries and dependencies</p>
             <div class="card">
@@ -56,27 +69,9 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-lg-12">
-            <h2 class="mt-5">Resources Graph</h2>
-            <p class="lead">Define your resources and links</p>
-            <div class="card">
-                <div class="graph card-img-top" id="resources-graph"></div>
-
-                <ul class="list-group list-group-flush">
-                    <li class="list-group-item">Cras justo odio</li>
-                    <li class="list-group-item">Dapibus ac facilisis in</li>
-                    <li class="list-group-item">Vestibulum at eros</li>
-                </ul>
-                <div class="card-body">
-                    <a href="#" class="card-link">Card link</a>
-                    <a href="#" class="card-link" data-toggle="modal" data-target="#create-node-modal">Another link</a>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
+<!-- Modals -->
 <div class="modal fade" id="create-node-modal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -87,7 +82,7 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="create-node-form">
+                <form>
                     <div class="form-group">
                         <label for="node-id" class="col-form-label">ID:</label>
                         <input type="number" min="0" class="form-control" id="node-id" name="id" required tabindex="8">
@@ -120,7 +115,7 @@
                             <label class="custom-control-label" for="node-type-source">Source node</label>
                         </div>
                         <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" id="node-type-none" name="type" class="custom-control-input" value="none" checked tabindex="6">
+                            <input type="radio" id="node-type-none" name="type" class="custom-control-input" value="none" required checked tabindex="6">
                             <label class="custom-control-label" for="node-type-none">None (default)</label>
                         </div>
                     </div>
@@ -136,10 +131,10 @@
 </div>
 
 <div class="modal fade" id="create-edge-modal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-sm" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Make an edge between queries</h5>
+                <h5 class="modal-title">Connect queries</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -147,11 +142,11 @@
             <div class="modal-body">
                 <form>
                     <div class="form-group">
-                        <label for="edge-from" class="col-form-label">From:</label>
+                        <label for="edge-source" class="col-form-label">Source:</label>
                         <input readonly disabled type="text" class="form-control-plaintext" id="edge-source" name="source">
                     </div>
                     <div class="form-group">
-                        <label for="edge-to" class="col-form-label">To:</label>
+                        <label for="edge-target" class="col-form-label">Target:</label>
                         <input readonly disabled type="text" class="form-control-plaintext" id="edge-target" name="target">
                     </div>
                     <div class="form-group">
@@ -169,11 +164,148 @@
     </div>
 </div>
 
+<div class="modal fade" id="create-resource-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create a resource</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="resource-id" class="col-form-label">ID:</label>
+                        <input type="number" min="0" class="form-control" id="resource-id" name="id" required tabindex="11">
+                    </div>
+                    <div class="form-group">
+                        <label for="resource-label" class="col-form-label">Label:</label>
+                        <input type="text" class="form-control" id="resource-label" name="label" required tabindex="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="resource-capacity" class="col-form-label">Total capacity:</label>
+                        <input type="number" min="0" class="form-control" id="resource-capacity" name="capacity" required tabindex="2">
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="resource-placement-edge" name="placement" class="custom-control-input" value="edge" required tabindex="3">
+                            <label class="custom-control-label" for="resource-placement-edge">Edge resource</label>
+                        </div>
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="resource-placement-cloud" name="placement" class="custom-control-input" value="cloud" tabindex="4">
+                            <label class="custom-control-label" for="resource-placement-cloud">Cloud resource</label>
+                        </div>
+                    </div>
+                    <fieldset>
+                        <legend class="pt-2">Query execution costs</legend>
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="resource-capacity" class="col-form-label">Filter:</label>
+                                <input type="number" min="0" step="any" class="form-control" name="costs.filter" value="0" tabindex="5" required>
+                            </div>
+                            <div class="form-group col">
+                                <label for="resource-capacity" class="col-form-label">Sequence match:</label>
+                                <input type="number" min="0" step="any" class="form-control" name="costs.sequence" value="0" tabindex="6" required>
+                            </div>
+                            <div class="form-group col">
+                                <label for="resource-capacity" class="col-form-label">Pattern match:</label>
+                                <input type="number" min="0" step="any" class="form-control" name="costs.pattern" value="0" tabindex="7" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col">
+                                <label for="resource-capacity" class="col-form-label">Aggregate batch mode:</label>
+                                <input type="number" min="0" step="any" class="form-control" name="costs.batch_aggregate" value="0" tabindex="8" required>
+                            </div>
+                            <div class="form-group col">
+                                <label for="resource-capacity" class="col-form-label">Aggregate sliding mode:</label>
+                                <input type="number" min="0" step="any" class="form-control" name="costs.sliding_aggregate" value="0" tabindex="9" required>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <input type="submit" class="d-none">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" tabindex="12">Cancel</button>
+                <button type="button" class="btn btn-primary submit" tabindex="10">Create resource</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="create-link-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-sm" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Connect resources</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="link-source" class="col-form-label">Source:</label>
+                        <input readonly disabled type="text" class="form-control-plaintext" id="link-source" name="source">
+                    </div>
+                    <div class="form-group">
+                        <label for="link-target" class="col-form-label">Target:</label>
+                        <input readonly disabled type="text" class="form-control-plaintext" id="link-target" name="target">
+                    </div>
+                    <div class="form-group">
+                        <label for="link-bandwidth" class="col-form-label">Bandwidth:</label>
+                        <input type="number" min="0" step="any" class="form-control" id="link-bandwidth" name="bandwidth" required tabindex="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="link-latency" class="col-form-label">Latency:</label>
+                        <input type="number" min="0" step="any" class="form-control" id="link-latency" name="latency" required tabindex="2">
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input class="custom-control-input" type="checkbox" id="link-bidirectional" name="bidirectional" tabindex="3">
+                            <label class="custom-control-label" for="link-bidirectional">
+                                Bidirectional link
+                            </label>
+                        </div>
+                    </div>
+                    <input type="submit" class="d-none">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" tabindex="5">Cancel</button>
+                <button type="button" class="btn btn-primary submit" tabindex="4">Create link</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tooltip Templates -->
 <div class="d-none template" id="node-tooltip">
     <div class="small">
-        <p>Consumption: <strong>${consumption}</strong></p>
         <p>Query Type: <strong>${query_type}</strong></p>
         <p>Node Type: <strong>${type}</strong></p>
+        <p>Consumption: <strong>${consumption}</strong></p>
+    </div>
+</div>
+
+<div class="d-none template" id="edge-tooltip">
+    <div class="small">
+        <p>Bandwidth: <strong>${bandwidth}</strong></p>
+    </div>
+</div>
+
+<div class="d-none template" id="resource-tooltip">
+    <div class="small">
+        <p>Placement: <strong>${placement}</strong></p>
+        <p>Capacity: <strong>${capacity}</strong></p>
+    </div>
+</div>
+
+<div class="d-none template" id="link-tooltip">
+    <div class="small">
+        <p>Bandwidth: <strong>${bandwidth}</strong>, Latency: <strong>${latency}</strong></p>
     </div>
 </div>
 

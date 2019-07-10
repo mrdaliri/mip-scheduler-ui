@@ -10,6 +10,7 @@ class CreateForm {
         this._form = container.find('form');
         this._registerGraphEvents();
         this._registerFormEvents();
+        this._registerModalEvents();
     }
 
     get tempData() {
@@ -34,9 +35,7 @@ class CreateForm {
 
     _show() {
         let self = this;
-        this.container.modal().on('shown.bs.modal', function () {
-            self.form.find('input[tabindex=1]').focus();
-        });
+        this.container.modal();
         return this;
     }
 
@@ -64,11 +63,23 @@ class CreateForm {
         let self = this;
 
         this.container.find('.submit').click(function () {
-            self.hide().generate();
+            /* Since browser form validation (HTML5 feature) won't get triggered on form's submit() event,
+               we should simulate form submission via firing click event on one of its submit buttons.
+              (for more information, take a look at https://stackoverflow.com/a/12647431/501134)
+             */
+            self.form.find('input[type="submit"]').click();
         });
-        this.form.submit(function () {
-            self.hide().generate();
-            return false;
+        this.form.submit(function (e) {
+            e.preventDefault();
+            self.generate().hide();
+        });
+    }
+
+    _registerModalEvents() {
+        let self = this;
+
+        this.container.on('shown.bs.modal', function () {
+            self.form.find('input[tabindex=1]').focus();
         });
     }
 
@@ -81,7 +92,9 @@ class CreateForm {
     }
 
     ask(data) {
-        this.tempData = data;
+        if (data) {
+            this.tempData = data;
+        }
         this._populateForm();
         this._show();
         return this;
@@ -89,6 +102,7 @@ class CreateForm {
 
     generate(reset = true) {
         let data = this._getFormData();
+        console.log(data);
         this.graph.addNode({'data': data, 'position': this.tempData});
         this._reset();
         return this;
@@ -100,22 +114,51 @@ class CreateEdgeForm extends CreateForm {
         let self = this;
 
         this.graph.content.on('select', 'node', function (e) {
-            let selectedNodes = self.graph.content.$('node:selected');
-            if (selectedNodes.length === 2) {
-                self.ask({source: selectedNodes[0], target: selectedNodes[1]})
-                selectedNodes.unselect();
+            if (self.tempData && self.tempData.hasOwnProperty('source')) {
+                self.tempData.target = e.target;
+
+                let edges = self.tempData.source.edgesWith(self.tempData.target);
+                if (edges.length === 0 || (!edges[0].data('bidirectional') && edges[0].source() !== self.tempData.source)) {
+                    self.tempData.unidirectional = !(edges.length === 0);
+                    self.ask();
+                } else {
+                    self.graph.nodes.unselect();
+                }
+            } else {
+                self.tempData = {source: e.target};
             }
+        });
+        this.graph.content.on('unselect', 'node', function (e) {
+            self.tempData = {};
+        });
+    }
+
+    _registerModalEvents() {
+        super._registerModalEvents();
+
+        let self = this;
+        this.container.on('hide.bs.modal', function () {
+            self.graph.nodes.unselect();
         });
     }
 
     _populateForm() {
-        super._populateForm();
         this.form.find('input[name="source"]').val(this.tempData.source.data('label'));
         this.form.find('input[name="target"]').val(this.tempData.target.data('label'));
+
+        this.form.find('input[name="bidirectional"]').prop('disabled', this.tempData.unidirectional);
+    }
+
+    _reset() {
+        super._reset();
+        return this;
     }
 
     generate() {
         let data = this._getFormData();
+        if (data.hasOwnProperty('bidirectional') && data.bidirectional === 'on') {
+            data.bidirectional = true;
+        }
         this.graph.addEdge({'data': data, source: this.tempData.source, target: this.tempData.target});
         this._reset();
         return this;
@@ -125,14 +168,16 @@ class CreateEdgeForm extends CreateForm {
 class Graph {
     _content;
     _container;
-    _tooltipTemplate;
+    _nodeTooltipTemplate;
+    _edgeTooltipTemplate;
     _layout;
 
-    constructor(container, graphOptions, tooltipTemplate, layout = 'grid') {
+    constructor(container, graphOptions, nodeTooltipTemplate, edgeTooltipTemplate, layout = 'grid') {
         graphOptions.container = container;
         this._content = cytoscape(graphOptions);
         this._container = container;
-        this._tooltipTemplate = tooltipTemplate;
+        this._nodeTooltipTemplate = nodeTooltipTemplate;
+        this._edgeTooltipTemplate = edgeTooltipTemplate;
         this._layout = layout;
     }
 
@@ -152,12 +197,20 @@ class Graph {
         return this._container;
     }
 
-    get tooltipTemplate() {
-        return this._tooltipTemplate;
+    get nodeTooltipTemplate() {
+        return this._nodeTooltipTemplate;
     }
 
-    set tooltipTemplate(value) {
-        this._tooltipTemplate = value;
+    set nodeTooltipTemplate(value) {
+        this._nodeTooltipTemplate = value;
+    }
+
+    get edgeTooltipTemplate() {
+        return this._edgeTooltipTemplate;
+    }
+
+    set edgeTooltipTemplate(value) {
+        this._edgeTooltipTemplate = value;
     }
 
     get layout() {
@@ -192,7 +245,7 @@ class Graph {
             data: data,
             renderedPosition: position
         })[0];
-        this.attachTooltip(node);
+        this._attachTooltip(node);
         return this;
     }
 
@@ -201,14 +254,17 @@ class Graph {
         data.target = target.id();
         let edge = this.content.add({
             group: 'edges',
-            data: data
-        });
+            data: data,
+            classes: data.bidirectional ? 'undirected' : 'directed'
+        })[0];
+        this._attachTooltip(edge);
+        return this;
     }
 
-    attachTooltip(node) {
+    _attachTooltip(element) {
         let self = this;
-        return tippy(node.popperRef(), {
-            content: Graph.recursive_rendering(self.tooltipTemplate, node.data()),
+        return tippy(element.popperRef(), {
+            content: Graph.recursive_rendering(element.isNode() ? self.nodeTooltipTemplate : self.edgeTooltipTemplate, element.data()),
             trigger: 'manual',
             arrow: true,
             placement: 'bottom',
@@ -229,6 +285,7 @@ $(function () {
     let nodesGraph = new Graph(
         $('#nodes-graph'),
         {
+            boxSelectionEnabled: false,
             style: [
                 {
                     selector: 'node',
@@ -241,7 +298,6 @@ $(function () {
                     style: {
                         'curve-style': 'bezier',
                         'target-arrow-shape': 'triangle',
-                        'label': 'data(bandwidth)'
                     }
                 }
             ],
@@ -256,12 +312,48 @@ $(function () {
                 ]
             },
         },
-        $('#node-tooltip').html()
+        $('#node-tooltip').html(),
+        $('#edge-tooltip').html()
     );
 
     let createNode = new CreateForm($('#create-node-modal'), nodesGraph);
     let createEdge = new CreateEdgeForm($('#create-edge-modal'), nodesGraph);
     $('#nodes-graph-layout').click(function () {
         nodesGraph.runLayout();
+    });
+
+    let resourcesGraph = new Graph(
+        $('#resources-graph'),
+        {
+            boxSelectionEnabled: false,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'label': 'data(label)'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'curve-style': 'bezier',
+                        'target-arrow-shape': 'triangle',
+                    }
+                },
+                {
+                    selector: 'edge.undirected',
+                    style: {
+                        'target-arrow-shape': 'none'
+                    }
+                }
+            ]
+        },
+        $('#resource-tooltip').html(),
+        $('#link-tooltip').html()
+    );
+    let createResource = new CreateForm($('#create-resource-modal'), resourcesGraph);
+    let createLink = new CreateEdgeForm($('#create-link-modal'), resourcesGraph);
+    $('#resources-graph-layout').click(function () {
+        resourcesGraph.runLayout();
     });
 });
