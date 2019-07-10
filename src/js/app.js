@@ -1,22 +1,23 @@
 class CreateForm {
     _container;
     _graph;
-    _position;
+    _tempData;
     _form;
 
     constructor(container, graph) {
         this._container = container;
         this._graph = graph;
         this._form = container.find('form');
-        this._registerEvents();
+        this._registerGraphEvents();
+        this._registerFormEvents();
     }
 
-    get position() {
-        return this._position;
+    get tempData() {
+        return this._tempData;
     }
 
-    set position(value) {
-        this._position = value;
+    set tempData(value) {
+        this._tempData = value;
     }
 
     get graph() {
@@ -34,7 +35,7 @@ class CreateForm {
     _show() {
         let self = this;
         this.container.modal().on('shown.bs.modal', function () {
-            self.form.find('input:first').focus();
+            self.form.find('input[tabindex=1]').focus();
         });
         return this;
     }
@@ -49,14 +50,18 @@ class CreateForm {
         return this;
     }
 
-    _registerEvents() {
+    _registerGraphEvents() {
         let self = this;
 
-        this.graph.content.on("tap", function (e) {
+        this.graph.content.on('tap', function (e) {
             if (e.target === self.graph.content) {
                 self.ask(e.renderedPosition);
             }
         });
+    }
+
+    _registerFormEvents() {
+        let self = this;
 
         this.container.find('.submit').click(function () {
             self.hide().generate();
@@ -67,19 +72,51 @@ class CreateForm {
         });
     }
 
-    ask(position, reset) {
-        this.position = position;
-        if (reset) {
-            this._reset()._show();
-        } else {
-            this._show();
-        }
+    _getFormData() {
+        return this.form.serializeArray().reduce((a, x) => ({...a, [x.name]: x.value}), {});
+    }
+
+    _populateForm() {
+        this.form.find('input[name="id"]').val(this.graph.nodes.length + 1);
+    }
+
+    ask(data) {
+        this.tempData = data;
+        this._populateForm();
+        this._show();
         return this;
     }
 
+    generate(reset = true) {
+        let data = this._getFormData();
+        this.graph.addNode({'data': data, 'position': this.tempData});
+        this._reset();
+        return this;
+    }
+}
+
+class CreateEdgeForm extends CreateForm {
+    _registerGraphEvents() {
+        let self = this;
+
+        this.graph.content.on('select', 'node', function (e) {
+            let selectedNodes = self.graph.content.$('node:selected');
+            if (selectedNodes.length === 2) {
+                self.ask({source: selectedNodes[0], target: selectedNodes[1]})
+                selectedNodes.unselect();
+            }
+        });
+    }
+
+    _populateForm() {
+        super._populateForm();
+        this.form.find('input[name="source"]').val(this.tempData.source.data('label'));
+        this.form.find('input[name="target"]').val(this.tempData.target.data('label'));
+    }
+
     generate() {
-        let data = this.form.serializeArray().reduce((a, x) => ({...a, [x.name]: x.value}), {});
-        this.graph.addNode(new Node(data), this.position);
+        let data = this._getFormData();
+        this.graph.addEdge({'data': data, source: this.tempData.source, target: this.tempData.target});
         this._reset();
         return this;
     }
@@ -88,8 +125,6 @@ class CreateForm {
 class Graph {
     _content;
     _container;
-    _nodes = [];
-    _edges = [];
     _tooltipTemplate;
     _layout;
 
@@ -106,11 +141,11 @@ class Graph {
     }
 
     get nodes() {
-        return this._nodes;
+        return this.content.nodes();
     }
 
     get edges() {
-        return this._edges;
+        return this.content.edges();
     }
 
     get container() {
@@ -151,23 +186,29 @@ class Graph {
         return string;
     }
 
-    addNode(node, position) {
-        let id = `${node.label}-${this.nodes.length}`;
-        this.nodes.push(node);
-        this.content.add({
+    addNode({data, position} = {}) {
+        let node = this.content.add({
             group: 'nodes',
-            data: {id: id, label: node.label},
+            data: data,
             renderedPosition: position
-        });
-        this.attachTooltip(id, node);
+        })[0];
+        this.attachTooltip(node);
         return this;
     }
 
-    attachTooltip(id, node) {
+    addEdge({data, source, target} = {}) {
+        data.source = source.id();
+        data.target = target.id();
+        let edge = this.content.add({
+            group: 'edges',
+            data: data
+        });
+    }
+
+    attachTooltip(node) {
         let self = this;
-        let graphNode = this.content.getElementById(id);
-        return tippy(graphNode.popperRef(), {
-            content: Graph.recursive_rendering(self.tooltipTemplate, node), // TODO: replace Node class with graph's node data
+        return tippy(node.popperRef(), {
+            content: Graph.recursive_rendering(self.tooltipTemplate, node.data()),
             trigger: 'manual',
             arrow: true,
             placement: 'bottom',
@@ -181,20 +222,6 @@ class Graph {
     runLayout() {
         this.content.layout({name: this.layout}).run();
         return this;
-    }
-}
-
-class Node {
-    label;
-    consumption;
-    type;
-    query_type;
-
-    constructor({label, consumption, type, query_type} = {}) {
-        this.label = label;
-        this.consumption = parseFloat(consumption);
-        this.type = type;
-        this.query_type = query_type;
     }
 }
 
@@ -213,15 +240,27 @@ $(function () {
                     selector: 'edge',
                     style: {
                         'curve-style': 'bezier',
-                        'target-arrow-shape': 'triangle'
+                        'target-arrow-shape': 'triangle',
+                        'label': 'data(bandwidth)'
                     }
                 }
-            ]
+            ],
+            elements: {
+                nodes: [
+                    {data: {id: 'a', label: 'ff'}},
+                    {data: {id: 'b', label: 'ccc'}},
+                    {data: {id: 'n0', label: 'ddd'}},
+                ],
+                edges: [
+                    {data: {id: 'ab', source: 'a', target: 'b', bandwidth: 12.5}}
+                ]
+            },
         },
         $('#node-tooltip').html()
     );
 
     let createNode = new CreateForm($('#create-node-modal'), nodesGraph);
+    let createEdge = new CreateEdgeForm($('#create-edge-modal'), nodesGraph);
     $('#nodes-graph-layout').click(function () {
         nodesGraph.runLayout();
     });

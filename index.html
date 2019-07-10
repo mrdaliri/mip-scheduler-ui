@@ -77,7 +77,7 @@
     </div>
 </div>
 
-<div class="modal fade in" id="create-node-modal" tabindex="-1" role="dialog">
+<div class="modal fade" id="create-node-modal" tabindex="-1" role="dialog">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -89,16 +89,20 @@
             <div class="modal-body">
                 <form id="create-node-form">
                     <div class="form-group">
+                        <label for="node-id" class="col-form-label">ID:</label>
+                        <input type="number" min="0" class="form-control" id="node-id" name="id" required tabindex="8">
+                    </div>
+                    <div class="form-group">
                         <label for="node-label" class="col-form-label">Label:</label>
-                        <input type="text" class="form-control" id="node-label" name="label" required>
+                        <input type="text" class="form-control" id="node-label" name="label" required tabindex="1">
                     </div>
                     <div class="form-group">
                         <label for="node-consumption" class="col-form-label">Consumption Rate:</label>
-                        <input type="number" min="0" step="any" class="form-control" id="node-consumption" name="consumption" required>
+                        <input type="number" min="0" step="any" class="form-control" id="node-consumption" name="consumption" required tabindex="2">
                     </div>
                     <div class="form-group">
                         <label for="node-query-type" class="col-form-label">Query Type:</label>
-                        <select class="custom-select" id="node-query-type" name="query_type">
+                        <select class="custom-select" id="node-query-type" name="query_type" tabindex="3">
                             <option value="filter">Filter</option>
                             <option value="sequence">Sequence match</option>
                             <option value="sequence">Pattern match</option>
@@ -108,15 +112,15 @@
                     </div>
                     <div class="form-group">
                         <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" id="node-type-sink" name="type" class="custom-control-input" value="sink">
+                            <input type="radio" id="node-type-sink" name="type" class="custom-control-input" value="sink" tabindex="4">
                             <label class="custom-control-label" for="node-type-sink">Sink node</label>
                         </div>
                         <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" id="node-type-source" name="type" class="custom-control-input" value="source">
+                            <input type="radio" id="node-type-source" name="type" class="custom-control-input" value="source" tabindex="5">
                             <label class="custom-control-label" for="node-type-source">Source node</label>
                         </div>
                         <div class="custom-control custom-radio custom-control-inline">
-                            <input type="radio" id="node-type-none" name="type" class="custom-control-input" value="none" checked>
+                            <input type="radio" id="node-type-none" name="type" class="custom-control-input" value="none" checked tabindex="6">
                             <label class="custom-control-label" for="node-type-none">None (default)</label>
                         </div>
                     </div>
@@ -124,8 +128,42 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary submit">Save changes</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" tabindex="9">Cancel</button>
+                <button type="button" class="btn btn-primary submit" tabindex="7">Add query</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="create-edge-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Make an edge between queries</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="edge-from" class="col-form-label">From:</label>
+                        <input readonly disabled type="text" class="form-control-plaintext" id="edge-source" name="source">
+                    </div>
+                    <div class="form-group">
+                        <label for="edge-to" class="col-form-label">To:</label>
+                        <input readonly disabled type="text" class="form-control-plaintext" id="edge-target" name="target">
+                    </div>
+                    <div class="form-group">
+                        <label for="edge-bandwidth" class="col-form-label">Bandwidth:</label>
+                        <input type="number" min="0" step="any" class="form-control" id="edge-bandwidth" name="bandwidth" required tabindex="1">
+                    </div>
+                    <input type="submit" class="d-none">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" tabindex="3">Cancel</button>
+                <button type="button" class="btn btn-primary submit" tabindex="2">Create edge</button>
             </div>
         </div>
     </div>
