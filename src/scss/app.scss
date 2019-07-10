@@ -1,0 +1,11 @@
+.graph canvas {
+    left: 0; /* fix cytoscape positioning bug */
+}
+
+.graph {
+    height: 50vh;
+}
+
+.tippy-content p {
+    margin-bottom: 0;
+}

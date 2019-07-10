@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/bootstrap@4.3.1/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@4.0.1/index.css">
+    <link rel="stylesheet" href="dist/css/app.css">
+
+    <title>Hello, world!</title>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark static-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">Start Bootstrap</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
+                aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Home
+                        <span class="sr-only">(current)</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">About</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Services</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Contact</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Page Content -->
+<div class="container">
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="mt-5">Queries Graph</h2>
+            <p class="lead">Design your queries and dependencies</p>
+            <div class="card">
+                <div class="graph card-img-top" id="nodes-graph"></div>
+                <div class="card-footer">
+                    <button type="button" class="btn btn-block btn-info" id="nodes-graph-layout">Re-layout graph</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-lg-12">
+            <h2 class="mt-5">Resources Graph</h2>
+            <p class="lead">Define your resources and links</p>
+            <div class="card">
+                <div class="graph card-img-top" id="resources-graph"></div>
+
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Cras justo odio</li>
+                    <li class="list-group-item">Dapibus ac facilisis in</li>
+                    <li class="list-group-item">Vestibulum at eros</li>
+                </ul>
+                <div class="card-body">
+                    <a href="#" class="card-link">Card link</a>
+                    <a href="#" class="card-link" data-toggle="modal" data-target="#create-node-modal">Another link</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade in" id="create-node-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create a new query</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="create-node-form">
+                    <div class="form-group">
+                        <label for="node-label" class="col-form-label">Label:</label>
+                        <input type="text" class="form-control" id="node-label" name="label" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="node-consumption" class="col-form-label">Consumption Rate:</label>
+                        <input type="number" min="0" step="any" class="form-control" id="node-consumption" name="consumption" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="node-query-type" class="col-form-label">Query Type:</label>
+                        <select class="custom-select" id="node-query-type" name="query_type">
+                            <option value="filter">Filter</option>
+                            <option value="sequence">Sequence match</option>
+                            <option value="sequence">Pattern match</option>
+                            <option value="batch_aggregate">Aggregate batch mode</option>
+                            <option value="sliding_aggregate">Aggregate sliding mode</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="node-type-sink" name="type" class="custom-control-input" value="sink">
+                            <label class="custom-control-label" for="node-type-sink">Sink node</label>
+                        </div>
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="node-type-source" name="type" class="custom-control-input" value="source">
+                            <label class="custom-control-label" for="node-type-source">Source node</label>
+                        </div>
+                        <div class="custom-control custom-radio custom-control-inline">
+                            <input type="radio" id="node-type-none" name="type" class="custom-control-input" value="none" checked>
+                            <label class="custom-control-label" for="node-type-none">None (default)</label>
+                        </div>
+                    </div>
+                    <input type="submit" class="d-none">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary submit">Save changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-none template" id="node-tooltip">
+    <div class="small">
+        <p>Consumption: <strong>${consumption}</strong></p>
+        <p>Query Type: <strong>${query_type}</strong></p>
+        <p>Node Type: <strong>${type}</strong></p>
+    </div>
+</div>
+
+<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+<script src="https://unpkg.com/jquery@3.3.1/dist/jquery.slim.min.js"></script>
+<script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+<script src="https://unpkg.com/popper.js@1.14.7/dist/umd/popper.js"></script>
+<script src="https://unpkg.com/tippy.js@4.0.1/umd/index.all.min.js"></script>
+<script src="https://unpkg.com/bootstrap@4.3.1/dist/js/bootstrap.min.js"></script>
+<script src="https://unpkg.com/cytoscape-popper@1.0.4/cytoscape-popper.js"></script>
+
+<script src="dist/js/app.js"></script>
+</body>
+</html>
