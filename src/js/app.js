@@ -7,7 +7,7 @@ class CreateForm {
     constructor(container, graph) {
         this._container = container;
         this._graph = graph;
-        this._form = container.find('form');
+        this._form = new Form(container.find('form'));
         this._registerGraphEvents();
         this._registerFormEvents();
         this._registerModalEvents();
@@ -45,7 +45,7 @@ class CreateForm {
     }
 
     _reset() {
-        this.form[0].reset();
+        this.form.reset();
         return this;
     }
 
@@ -63,13 +63,9 @@ class CreateForm {
         let self = this;
 
         this.container.find('.submit').click(function () {
-            /* Since browser form validation (HTML5 feature) won't get triggered on form's submit() event,
-               we should simulate form submission via firing click event on one of its submit buttons.
-              (for more information, take a look at https://stackoverflow.com/a/12647431/501134)
-             */
-            self.form.find('input[type="submit"]').click();
+            self.form.submit();
         });
-        this.form.submit(function (e) {
+        this.form.content.submit(function (e) {
             e.preventDefault();
             self.generate().hide();
         });
@@ -79,16 +75,12 @@ class CreateForm {
         let self = this;
 
         this.container.on('shown.bs.modal', function () {
-            self.form.find('input[tabindex=1]').focus();
+            self.form.focus();
         });
     }
 
-    _getFormData() {
-        return this.form.serializeArray().reduce((a, x) => ({...a, [x.name]: x.value}), {});
-    }
-
     _populateForm() {
-        this.form.find('input[name="id"]').val(this.graph.nodes.length + 1);
+        this.form.content.find('input[name="id"]').val(this.graph.nodes.length + 1);
     }
 
     ask(data) {
@@ -101,8 +93,7 @@ class CreateForm {
     }
 
     generate(reset = true) {
-        let data = this._getFormData();
-        console.log(data);
+        let data = this.form.getData();
         this.graph.addNode({'data': data, 'position': this.tempData});
         this._reset();
         return this;
@@ -143,24 +134,58 @@ class CreateEdgeForm extends CreateForm {
     }
 
     _populateForm() {
-        this.form.find('input[name="source"]').val(this.tempData.source.data('label'));
-        this.form.find('input[name="target"]').val(this.tempData.target.data('label'));
+        this.form.content.find('input[name="source"]').val(this.tempData.source.data('label'));
+        this.form.content.find('input[name="target"]').val(this.tempData.target.data('label'));
 
-        this.form.find('input[name="bidirectional"]').prop('disabled', this.tempData.unidirectional);
-    }
-
-    _reset() {
-        super._reset();
-        return this;
+        this.form.content.find('input[name="bidirectional"]').prop('disabled', this.tempData.unidirectional);
     }
 
     generate() {
-        let data = this._getFormData();
+        let data = this.form.getData();
         if (data.hasOwnProperty('bidirectional') && data.bidirectional === 'on') {
             data.bidirectional = true;
         }
         this.graph.addEdge({'data': data, source: this.tempData.source, target: this.tempData.target});
         this._reset();
+        return this;
+    }
+}
+
+class Form {
+    _content;
+
+    constructor(content) {
+        this._content = content;
+    }
+
+    get content() {
+        return this._content;
+    }
+
+    set content(value) {
+        this._content = value;
+    }
+
+    getData() {
+        return this.content.serializeArray().reduce((a, x) => ({...a, [x.name]: x.value}), {});
+    }
+
+    focus() {
+        this.content.find('input[tabindex=1]').focus();
+        return this;
+    }
+
+    submit() {
+        /* Since browser form validation (HTML5 feature) won't get triggered on form's submit() event,
+           we should simulate form submission via firing click event on one of its submit buttons.
+          (for more information, take a look at https://stackoverflow.com/a/12647431/501134)
+         */
+        this.content.find('input[type="submit"]').click();
+        return this;
+    }
+
+    reset() {
+        this.content[0].reset();
         return this;
     }
 }
