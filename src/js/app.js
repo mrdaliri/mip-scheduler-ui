@@ -167,7 +167,18 @@ class Form {
     }
 
     getData() {
-        return this.content.serializeArray().reduce((a, x) => ({...a, [x.name]: x.value}), {});
+        let result = this.content.serializeArray().reduce((a, x) => ({...a, [x.name]: x.value}), {});
+        Object.keys(result).forEach(key => {
+            let dotNotation = key.split('.');
+            if (dotNotation.length === 2) {
+                if (typeof result[dotNotation[0]] == "undefined") {
+                    result[dotNotation[0]] = {};
+                }
+                result[dotNotation[0]][dotNotation[1]] = result[key];
+                delete result[key];
+            }
+        });
+        return result;
     }
 
     focus() {
@@ -180,7 +191,12 @@ class Form {
            we should simulate form submission via firing click event on one of its submit buttons.
           (for more information, take a look at https://stackoverflow.com/a/12647431/501134)
          */
-        this.content.find('input[type="submit"]').click();
+        let submitButton = this.content.find('input[type="submit"]');
+        if (submitButton.length > 0) {
+            this.content.find('input[type="submit"]').click();
+        } else {
+            this.content.submit();
+        }
         return this;
     }
 
@@ -197,8 +213,9 @@ class Graph {
     _edgeTooltipTemplate;
     _layout;
 
-    constructor(container, graphOptions, nodeTooltipTemplate, edgeTooltipTemplate, layout = 'grid') {
+    constructor(container, graphOptions, nodeTooltipTemplate, edgeTooltipTemplate, layout = 'cose') {
         graphOptions.container = container;
+        graphOptions.layout = {name: layout}; // TODO: Define graph layout here with options, then only allow to run it (re-layout graph)
         this._content = cytoscape(graphOptions);
         this._container = container;
         this._nodeTooltipTemplate = nodeTooltipTemplate;
@@ -249,11 +266,11 @@ class Graph {
 
     // Adopted from
     // http://andreafalzetti.github.io/blog/2016/10/22/render-es6-javascript-template-literals-contained-variable.html
-    static recursive_rendering(string, context, stack) {
+    static recursiveRendering(string, context, stack) {
         for (let key in context) {
             if (context.hasOwnProperty(key)) {
                 if (typeof context[key] === "object") {
-                    string = Graph.recursive_rendering(string, context[key], (stack ? stack + '.' : '') + key);
+                    string = Graph.recursiveRendering(string, context[key], (stack ? stack + '.' : '') + key);
                 } else {
                     let find = '\\$\\{\\s*' + (stack ? stack + '.' : '') + key + '\\s*\\}';
                     let re = new RegExp(find, 'g');
@@ -289,7 +306,7 @@ class Graph {
     _attachTooltip(element) {
         let self = this;
         return tippy(element.popperRef(), {
-            content: Graph.recursive_rendering(element.isNode() ? self.nodeTooltipTemplate : self.edgeTooltipTemplate, element.data()),
+            content: Graph.recursiveRendering(element.isNode() ? self.nodeTooltipTemplate : self.edgeTooltipTemplate, element.data()),
             trigger: 'manual',
             arrow: true,
             placement: 'bottom',
@@ -303,6 +320,19 @@ class Graph {
     runLayout() {
         this.content.layout({name: this.layout}).run();
         return this;
+    }
+
+    clear() {
+        this.nodes.remove();
+        return this;
+    }
+
+    static getCollectionData(elements) {
+        let result = [];
+        elements.forEach(function (element) {
+            result.push(element.data());
+        });
+        return result;
     }
 }
 
@@ -328,12 +358,56 @@ $(function () {
             ],
             elements: {
                 nodes: [
-                    {data: {id: 'a', label: 'ff'}},
-                    {data: {id: 'b', label: 'ccc'}},
-                    {data: {id: 'n0', label: 'ddd'}},
+                    {
+                        data: {
+                            "id": 1,
+                            "label": "u1",
+                            "consumption": 5,
+                            "type": "source",
+                            "query_type": "sequence"
+                        }
+                    },
+                    {
+                        data: {
+                            "id": 2,
+                            "label": "u2",
+                            "consumption": 10,
+                            "type": "none",
+                            "query_type": "pattern"
+                        }
+                    },
+                    {
+                        data: {
+                            "id": 3,
+                            "label": "u3",
+                            "consumption": 15,
+                            "type": "sink",
+                            "query_type": "batch_aggregate"
+                        }
+                    }
                 ],
                 edges: [
-                    {data: {id: 'ab', source: 'a', target: 'b', bandwidth: 12.5}}
+                    {
+                        data: {
+                            "source": 1,
+                            "target": 2,
+                            "bandwidth": 10
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 1,
+                            "target": 3,
+                            "bandwidth": 10
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 2,
+                            "target": 3,
+                            "bandwidth": 10
+                        }
+                    }
                 ]
             },
         },
@@ -371,7 +445,136 @@ $(function () {
                         'target-arrow-shape': 'none'
                     }
                 }
-            ]
+            ],
+            elements: {
+                nodes: [
+                    {
+                        data: {
+                            "id": 1,
+                            "label": "r1",
+                            "placement": "cloud",
+                            "capacity": 10,
+                            "costs": {
+                                "filter": 1,
+                                "sequence": 2,
+                                "pattern": 3,
+                                "batch_aggregate": 4,
+                                "sliding_aggregate": 5
+                            }
+                        }
+                    },
+                    {
+                        data: {
+                            "id": 2,
+                            "label": "r2",
+                            "placement": "cloud",
+                            "capacity": 20,
+                            "costs": {
+                                "filter": 2,
+                                "sequence": 3,
+                                "pattern": 4,
+                                "batch_aggregate": 5,
+                                "sliding_aggregate": 6
+                            }
+                        }
+                    },
+                    {
+                        data: {
+                            "id": 3,
+                            "label": "r3",
+                            "placement": "edge",
+                            "capacity": 5,
+                            "costs": {
+                                "filter": 3,
+                                "sequence": 4,
+                                "pattern": 5,
+                                "batch_aggregate": 6,
+                                "sliding_aggregate": 7
+                            }
+                        }
+                    },
+                    {
+                        data: {
+                            "id": 4,
+                            "label": "r4",
+                            "placement": "edge",
+                            "capacity": 40,
+                            "costs": {
+                                "filter": 4,
+                                "sequence": 5,
+                                "pattern": 6,
+                                "batch_aggregate": 7,
+                                "sliding_aggregate": 8
+                            }
+                        }
+                    }
+                ],
+                edges: [
+                    {
+                        data: {
+                            "source": 1,
+                            "target": 2,
+                            "bandwidth": 10,
+                            "latency": 2,
+                            "bidirectional": true
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 1,
+                            "target": 3,
+                            "bandwidth": 2,
+                            "latency": 5,
+                            "bidirectional": true
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 1,
+                            "target": 4,
+                            "bandwidth": 6.25,
+                            "latency": 10,
+                            "bidirectional": true
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 2,
+                            "target": 3,
+                            "bandwidth": 5,
+                            "latency": 7,
+                            "bidirectional": true
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 2,
+                            "target": 4,
+                            "bandwidth": 7.14,
+                            "latency": 8,
+                            "bidirectional": true
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 3,
+                            "target": 4,
+                            "bandwidth": 20,
+                            "latency": 4,
+                            "bidirectional": false
+                        }
+                    },
+                    {
+                        data: {
+                            "source": 4,
+                            "target": 3,
+                            "bandwidth": 20,
+                            "latency": 4,
+                            "bidirectional": false
+                        }
+                    }
+                ]
+            }
         },
         $('#resource-tooltip').html(),
         $('#link-tooltip').html()
@@ -380,5 +583,32 @@ $(function () {
     let createLink = new CreateEdgeForm($('#create-link-modal'), resourcesGraph);
     $('#resources-graph-layout').click(function () {
         resourcesGraph.runLayout();
+    });
+
+    let costsForm = new Form($('#costs-form'));
+    costsForm.content.submit(function (e) {
+        e.preventDefault();
+        let problem = {
+            nodes: Graph.getCollectionData(nodesGraph.nodes),
+            edges: Graph.getCollectionData(nodesGraph.edges),
+            resources: Graph.getCollectionData(resourcesGraph.nodes),
+            links: Graph.getCollectionData(resourcesGraph.edges),
+            costs: costsForm.getData()
+        };
+        if (problem.nodes.length == 0) {
+            alert("You must create at least one query.");
+            return false;
+        }
+        if (problem.resources.length == 0) {
+            alert("You must create at least one resource.");
+            return false;
+        }
+        // TODO: Confirm whether there is a minimum count constraint (at least one) for edges and links
+
+        console.log(problem);
+    });
+    costsForm.content.on('reset', function () {
+        nodesGraph.clear();
+        resourcesGraph.clear();
     });
 });
