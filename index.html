@@ -44,9 +44,23 @@
 
 <!-- Page Content -->
 <div class="container">
-    <div class="row">
+    <div class="row mt-5">
         <div class="col-lg-12">
-            <h2 class="mt-5">Resources Graph</h2>
+            <h2>1. Queries Graph</h2>
+            <p class="lead">Design your queries and dependencies</p>
+            <div class="card">
+                <div class="graph card-img-top" id="nodes-graph"></div>
+                <div class="card-footer">
+                    <button type="button" class="btn btn-block btn-info" id="nodes-graph-layout">Re-layout graph</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row mt-5">
+        <div class="col-lg-12">
+            <h2>2. Resources Graph</h2>
             <p class="lead">Define your resources and links</p>
             <div class="card">
                 <div class="graph card-img-top" id="resources-graph"></div>
@@ -57,19 +71,90 @@
         </div>
     </div>
 
-    <div class="row">
+    <div class="row mt-5">
         <div class="col-lg-12">
-            <h2 class="mt-5">Queries Graph</h2>
-            <p class="lead">Design your queries and dependencies</p>
+            <h2>3. Transmission Costs</h2>
+            <p class="lead">How much a connection between cloud and edge costs?</p>
             <div class="card">
-                <div class="graph card-img-top" id="nodes-graph"></div>
-                <div class="card-footer">
-                    <button type="button" class="btn btn-block btn-info" id="nodes-graph-layout">Re-layout graph</button>
+                <div class="card-body">
+                    <form>
+                        <div class="form-group row">
+                            <label for="costs-cloud-cloud" class="col-sm-4 col-lg-2 col-form-label">Cloud to Cloud cost:</label>
+                            <div class="col-sm-8 col-lg-10">
+                                <input type="number" min="0" step="any"  class="form-control" id="costs-cloud-cloud" name="cloud_cloud">
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="costs-cloud-edge" class="col-sm-4 col-lg-2 col-form-label">Cloud to Edge cost:</label>
+                            <div class="col-sm-8 col-lg-10">
+                                <input type="number" min="0" step="any"  class="form-control" id="costs-cloud-edge" name="cloud_edge">
+                            </div>
+                        </div>
+                        <div class="form-group row mb-n1">
+                            <label for="costs-edge-edge" class="col-sm-4 col-lg-2 col-form-label">Edge to Edge cost:</label>
+                            <div class="col-sm-8 col-lg-10">
+                                <input type="number" min="0" step="any"  class="form-control" id="costs-edge-edge" name="cloud_cloud">
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row mt-5">
+        <div class="col-md-8">
+            <button type="button" class="btn btn-primary btn-lg btn-block">Find an optimal solution!</button>
+        </div>
+        <div class="col-md-4">
+            <button type="button" class="btn btn-danger btn-lg btn-block">Clear</button>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col-lg-12">
+            <table class="table">
+                <thead class="thead-dark">
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Submitted on</th>
+                    <th scope="col">Processing Time</th>
+                    <th scope="col">Solution</th>
+                    <th scope="col">Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <th scope="row">1</th>
+                    <td>Mark</td>
+                    <td>Otto</td>
+                    <td>@mdo</td>
+                    <td>Pending</td>
+                </tr>
+                <tr>
+                    <th scope="row">2</th>
+                    <td>Jacob</td>
+                    <td>Thornton</td>
+                    <td>@fat</td>
+                    <td>Done</td>
+                </tr>
+                <tr>
+                    <th scope="row">3</th>
+                    <td>Larry</td>
+                    <td>the Bird</td>
+                    <td>@twitter</td>
+                    <td>Pending</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<footer class="footer py-4 bg-light">
+    <div class="container text-center">
+        <span class="text-muted">Crafted with ❤️ by <a href="https://mrdaliri.com" class="text-dark">Mohammad-Reza Daliri</a>.</span>
+    </div>
+</footer>
 
 <!-- Modals -->
 <div class="modal fade" id="create-node-modal" tabindex="-1" role="dialog">
