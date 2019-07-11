@@ -111,37 +111,19 @@
     </div>
     <div class="row mt-5">
         <div class="col-lg-12">
-            <table class="table">
+            <table class="table" id="results">
                 <thead class="thead-dark">
                 <tr>
                     <th scope="col">#</th>
-                    <th scope="col">Submitted on</th>
+                    <th scope="col">Submission Date</th>
                     <th scope="col">Processing Time</th>
                     <th scope="col">Solution</th>
                     <th scope="col">Status</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <th scope="row">1</th>
-                    <td>Mark</td>
-                    <td>Otto</td>
-                    <td>@mdo</td>
-                    <td>Pending</td>
-                </tr>
-                <tr>
-                    <th scope="row">2</th>
-                    <td>Jacob</td>
-                    <td>Thornton</td>
-                    <td>@fat</td>
-                    <td>Done</td>
-                </tr>
-                <tr>
-                    <th scope="row">3</th>
-                    <td>Larry</td>
-                    <td>the Bird</td>
-                    <td>@twitter</td>
-                    <td>Pending</td>
+                <tr class="empty text-center">
+                    <td colspan="5">No entries. Submit a new request.</td>
                 </tr>
                 </tbody>
             </table>
@@ -365,7 +347,7 @@
     </div>
 </div>
 
-<!-- Tooltip Templates -->
+<!-- Templates -->
 <div class="d-none template" id="node-tooltip">
     <div class="small">
         <p>Query Type: <strong>${query_type}</strong></p>
@@ -391,6 +373,10 @@
     <div class="small">
         <p>Bandwidth: <strong>${bandwidth}</strong>, Latency: <strong>${latency}</strong></p>
     </div>
+</div>
+
+<div class="d-none template" id="allocation">
+    <p>Node(<strong>${node.label}</strong>): Resource(<strong>${resource.label}</strong>)</p>
 </div>
 
 <!-- jQuery first, then Popper.js, then Bootstrap JS -->

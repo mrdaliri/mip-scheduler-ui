@@ -264,23 +264,6 @@ class Graph {
         // this._layout = this.content.layout({name: value});
     }
 
-    // Adopted from
-    // http://andreafalzetti.github.io/blog/2016/10/22/render-es6-javascript-template-literals-contained-variable.html
-    static recursiveRendering(string, context, stack) {
-        for (let key in context) {
-            if (context.hasOwnProperty(key)) {
-                if (typeof context[key] === "object") {
-                    string = Graph.recursiveRendering(string, context[key], (stack ? stack + '.' : '') + key);
-                } else {
-                    let find = '\\$\\{\\s*' + (stack ? stack + '.' : '') + key + '\\s*\\}';
-                    let re = new RegExp(find, 'g');
-                    string = string.replace(re, context[key]);
-                }
-            }
-        }
-        return string;
-    }
-
     addNode({data, position} = {}) {
         let node = this.content.add({
             group: 'nodes',
@@ -306,7 +289,7 @@ class Graph {
     _attachTooltip(element) {
         let self = this;
         return tippy(element.popperRef(), {
-            content: Graph.recursiveRendering(element.isNode() ? self.nodeTooltipTemplate : self.edgeTooltipTemplate, element.data()),
+            content: Utils.recursiveRendering(element.isNode() ? self.nodeTooltipTemplate : self.edgeTooltipTemplate, element.data()),
             trigger: 'manual',
             arrow: true,
             placement: 'bottom',
@@ -336,7 +319,46 @@ class Graph {
     }
 }
 
+class Utils {
+    // Adopted from https://stackoverflow.com/a/6313008/501134
+    static secondsToDuration(secondsNum) {
+        let hours = Math.floor(secondsNum / 3600);
+        let minutes = Math.floor((secondsNum - (hours * 3600)) / 60);
+        let seconds = secondsNum - (hours * 3600) - (minutes * 60);
+
+        if (hours < 10) {
+            hours = "0" + hours;
+        }
+        if (minutes < 10) {
+            minutes = "0" + minutes;
+        }
+        if (seconds < 10) {
+            seconds = "0" + seconds;
+        }
+        return hours + ':' + minutes + ':' + seconds;
+    }
+
+    // Adopted from
+    // http://andreafalzetti.github.io/blog/2016/10/22/render-es6-javascript-template-literals-contained-variable.html
+    static recursiveRendering(string, context, stack) {
+        for (let key in context) {
+            if (context.hasOwnProperty(key)) {
+                if (typeof context[key] === "object") {
+                    string = Utils.recursiveRendering(string, context[key], (stack ? stack + '.' : '') + key);
+                } else {
+                    let find = '\\$\\{\\s*' + (stack ? stack + '.' : '') + key + '\\s*\\}';
+                    let re = new RegExp(find, 'g');
+                    string = string.replace(re, context[key]);
+                }
+            }
+        }
+        return string;
+    }
+}
+
 $(function () {
+    const solverAPI = 'http://localhost:8080/solve';
+
     let nodesGraph = new Graph(
         $('#nodes-graph'),
         {
@@ -585,6 +607,7 @@ $(function () {
         resourcesGraph.runLayout();
     });
 
+
     let costsForm = new Form($('#costs-form'));
     costsForm.content.submit(function (e) {
         e.preventDefault();
@@ -605,7 +628,38 @@ $(function () {
         }
         // TODO: Confirm whether there is a minimum count constraint (at least one) for edges and links
 
-        console.log(problem);
+        let startTime = new Date();
+        let resultsTable = $('#results > tbody');
+        let requestNum = resultsTable.find('tr:not(.empty)').length + 1;
+        let resultRow = $(`<tr><th scope="row">${requestNum}</th><td>${startTime.toLocaleString()}</td><td>&mdash;</td><td class="solution">Processing...</td><td>Submitted</td></tr>`).insertAfter(resultsTable.find('tr:last'));
+        console.log(resultRow);
+        resultsTable.find('tr.empty').remove();
+        fetch(solverAPI, {
+            method: 'POST', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, cors, *same-origin
+            headers: {
+                "Content-Type": "application/json; charset=utf-8"
+            },
+            body: JSON.stringify(problem), // body data type must match "Content-Type" header
+        })
+            .then(response => response.json())
+            .then(response => {
+                let solutionColumn = resultRow.find('td:eq(2)');
+                let statusColumn = resultRow.find('td:eq(3)');
+                if (response.hasOwnProperty('error')) {
+                    solutionColumn.text(response.message);
+                    statusColumn.text(response.error);
+                } else {
+                    statusColumn.text('Solved');
+
+                    let allocationTemplate = $('#allocation').html();
+                    solutionColumn.empty();
+                    response.forEach(allocation => {
+                        solutionColumn.append(Utils.recursiveRendering(allocationTemplate, allocation));
+                    });
+                }
+                resultRow.find('td:eq(1)').text(Utils.secondsToDuration((Date.now() - startTime) / 1000));
+            })
     });
     costsForm.content.on('reset', function () {
         nodesGraph.clear();
