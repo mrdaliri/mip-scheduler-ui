@@ -1,28 +1,12 @@
-class CreateForm {
+class ModalForm {
     _container;
-    _graph;
-    _tempData;
     _form;
 
-    constructor(container, graph) {
+    constructor(container) {
         this._container = container;
-        this._graph = graph;
         this._form = new Form(container.find('form'));
-        this._registerGraphEvents();
         this._registerFormEvents();
         this._registerModalEvents();
-    }
-
-    get tempData() {
-        return this._tempData;
-    }
-
-    set tempData(value) {
-        this._tempData = value;
-    }
-
-    get graph() {
-        return this._graph;
     }
 
     get container() {
@@ -49,16 +33,6 @@ class CreateForm {
         return this;
     }
 
-    _registerGraphEvents() {
-        let self = this;
-
-        this.graph.content.on('tap', function (e) {
-            if (e.target === self.graph.content) {
-                self.ask(e.renderedPosition);
-            }
-        });
-    }
-
     _registerFormEvents() {
         let self = this;
 
@@ -76,6 +50,52 @@ class CreateForm {
 
         this.container.on('shown.bs.modal', function () {
             self.form.focus();
+        });
+    }
+
+    _populateForm() { }
+
+    ask(data) {
+        this._populateForm();
+        this._show();
+        return this;
+    }
+
+    generate() {
+        this._reset();
+        return this;
+    }
+}
+
+class CreateForm extends ModalForm {
+    _graph;
+    _tempData;
+
+    constructor(container, graph) {
+        super(container);
+        this._graph = graph;
+        this._registerGraphEvents();
+    }
+
+    get tempData() {
+        return this._tempData;
+    }
+
+    set tempData(value) {
+        this._tempData = value;
+    }
+
+    get graph() {
+        return this._graph;
+    }
+
+    _registerGraphEvents() {
+        let self = this;
+
+        this.graph.content.on('tap', function (e) {
+            if (e.target === self.graph.content) {
+                self.ask(e.renderedPosition);
+            }
         });
     }
 
