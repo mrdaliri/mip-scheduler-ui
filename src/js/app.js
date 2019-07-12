@@ -632,7 +632,6 @@ $(function () {
         let resultsTable = $('#results > tbody');
         let requestNum = resultsTable.find('tr:not(.empty)').length + 1;
         let resultRow = $(`<tr><th scope="row">${requestNum}</th><td>${startTime.toLocaleString()}</td><td>&mdash;</td><td class="solution">Processing...</td><td>Submitted</td></tr>`).insertAfter(resultsTable.find('tr:last'));
-        console.log(resultRow);
         resultsTable.find('tr.empty').remove();
         fetch(solverAPI, {
             method: 'POST', // *GET, POST, PUT, DELETE, etc.
@@ -657,9 +656,15 @@ $(function () {
                     response.forEach(allocation => {
                         solutionColumn.append(Utils.recursiveRendering(allocationTemplate, allocation));
                     });
+
+                    costsForm.content[0].reset();
                 }
                 resultRow.find('td:eq(1)').text(Utils.secondsToDuration((Date.now() - startTime) / 1000));
             })
+            .catch(reason => {
+                resultRow.find('td:eq(2)').html('&mdash;');
+                resultRow.find('td:eq(3)').text('Error');
+            });
     });
     costsForm.content.on('reset', function () {
         nodesGraph.clear();
