@@ -96,6 +96,13 @@ class CreateForm extends ModalForm {
                 self.ask(e.renderedPosition);
             }
         });
+
+        this.graph.content.on('cxttap', 'node', function (e) {
+            let element = e.target;
+            self.ask(element);
+            self.form.populate(element.data()); // HACK
+            self.form.content.find('input[name="id"]').prop("readonly", true);
+        });
     }
 
     _populateForm() {
@@ -111,9 +118,13 @@ class CreateForm extends ModalForm {
         return this;
     }
 
-    generate(reset = true) {
+    generate() {
         let data = this.form.getData();
-        this.graph.addNode({'data': data, 'position': this.tempData});
+        if (this.tempData.id) { // edit instance
+            this.graph.editElement(this.tempData, data);
+        } else {
+            this.graph.addNode({'data': data, 'position': this.tempData});
+        }
         this._reset();
         return this;
     }
@@ -141,6 +152,14 @@ class CreateEdgeForm extends CreateForm {
         this.graph.content.on('unselect', 'node', function (e) {
             self.tempData = {};
         });
+
+        // HACK
+        this.graph.content.on('cxttap', 'edge', function (e) {
+            let element = e.target;
+            self.ask(element);
+            self.form.populate(element.data()); // HACK
+            self.form.content.find('input[name="id"]').prop("readonly", true);
+        });
     }
 
     _registerModalEvents() {
@@ -153,20 +172,23 @@ class CreateEdgeForm extends CreateForm {
     }
 
     _populateForm() {
-        this.form.content.find('input[name="source"]').val(this.tempData.source.data('label'));
-        this.form.content.find('input[name="target"]').val(this.tempData.target.data('label'));
+        if (typeof this.tempData.source === "object") {
+            this.form.content.find('input[name="source"]').val(this.tempData.source.data('label'));
+            this.form.content.find('input[name="target"]').val(this.tempData.target.data('label'));
 
-        this.form.content.find('input[name="bidirectional"]').prop('disabled', this.tempData.unidirectional);
+            this.form.content.find('input[name="bidirectional"]').prop('disabled', this.tempData.unidirectional);
+        }
     }
 
     generate() {
         let data = this.form.getData();
-        if (data.hasOwnProperty('bidirectional') && data.bidirectional === 'on') {
-            data.bidirectional = true;
+        data.bidirectional = data.hasOwnProperty('bidirectional') && data.bidirectional === 'on';
+
+        if (this.tempData.id) { // edit instance
+            this.graph.editElement(this.tempData, data);
         } else {
-            data.bidirectional = false;
+            this.graph.addEdge({'data': data, source: this.tempData.source, target: this.tempData.target});
         }
-        this.graph.addEdge({'data': data, source: this.tempData.source, target: this.tempData.target});
         this._reset();
         return this;
     }
@@ -204,6 +226,26 @@ class Form {
             }
         });
         return result;
+    }
+
+    populate(data, namespace) {
+        let self = this;
+        Object.keys(data).forEach(key => {
+            let value = data[key];
+            if (typeof value == "object") {
+                self.populate(value, key);
+            } else {
+                let inputName = namespace ? `${namespace}.${key}` : key;
+                let input = this.content.find(`input[name="${inputName}"]`);
+                if (typeof value == "boolean") {
+                    input.prop("checked", value);
+                } else if (input.attr("type") === "radio") {
+                    input.val([value]);
+                } else {
+                    input.val(value);
+                }
+            }
+        });
     }
 
     focus() {
@@ -247,11 +289,9 @@ class Graph {
         this._edgeTooltipTemplate = edgeTooltipTemplate;
         this._layout = layout;
 
+        let self = this;
         this.content.on('remove', 'node, edge', function (e) {
-            let tippyTooltip = e.target.scratch('tooltip');
-            if (tippyTooltip) {
-                tippyTooltip.destroy();
-            }
+            self._removeTooltip(e.target);
         });
     }
 
@@ -293,7 +333,6 @@ class Graph {
 
     set layout(value) {
         this._layout = value;
-        // this._layout = this.content.layout({name: value});
     }
 
     addNode({data, position} = {}) {
@@ -312,9 +351,15 @@ class Graph {
         let edge = this.content.add({
             group: 'edges',
             data: data,
-            classes: data.bidirectional ? 'undirected' : 'directed'
+            classes: data.bidirectional ? 'undirected' : 'directed' // TODO: Doesn't work for edit element. Define a new method which first removes the edge and then recreate it.
         })[0];
         this._attachTooltip(edge);
+        return this;
+    }
+
+    editElement(element, newData) {
+        element.data(newData);
+        this._removeTooltip(element)._attachTooltip(element);
         return this;
     }
 
@@ -332,6 +377,14 @@ class Graph {
         });
         element.scratch('tooltip', tippyTooltip);
         return tippyTooltip.show();
+    }
+
+    _removeTooltip(element) {
+        let tippyTooltip = element.scratch('tooltip');
+        if (tippyTooltip) {
+            tippyTooltip.destroy();
+        }
+        return this;
     }
 
     runLayout() {
