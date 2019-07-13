@@ -1,28 +1,12 @@
-class CreateForm {
+class ModalForm {
     _container;
-    _graph;
-    _tempData;
     _form;
 
-    constructor(container, graph) {
+    constructor(container) {
         this._container = container;
-        this._graph = graph;
         this._form = new Form(container.find('form'));
-        this._registerGraphEvents();
         this._registerFormEvents();
         this._registerModalEvents();
-    }
-
-    get tempData() {
-        return this._tempData;
-    }
-
-    set tempData(value) {
-        this._tempData = value;
-    }
-
-    get graph() {
-        return this._graph;
     }
 
     get container() {
@@ -49,16 +33,6 @@ class CreateForm {
         return this;
     }
 
-    _registerGraphEvents() {
-        let self = this;
-
-        this.graph.content.on('tap', function (e) {
-            if (e.target === self.graph.content) {
-                self.ask(e.renderedPosition);
-            }
-        });
-    }
-
     _registerFormEvents() {
         let self = this;
 
@@ -76,6 +50,51 @@ class CreateForm {
 
         this.container.on('shown.bs.modal', function () {
             self.form.focus();
+        });
+    }
+
+    _populateForm() { }
+
+    ask(data) {
+        this._populateForm();
+        this._show();
+        return this;
+    }
+
+    generate() {
+        return this;
+    }
+}
+
+class CreateForm extends ModalForm {
+    _graph;
+    _tempData;
+
+    constructor(container, graph) {
+        super(container);
+        this._graph = graph;
+        this._registerGraphEvents();
+    }
+
+    get tempData() {
+        return this._tempData;
+    }
+
+    set tempData(value) {
+        this._tempData = value;
+    }
+
+    get graph() {
+        return this._graph;
+    }
+
+    _registerGraphEvents() {
+        let self = this;
+
+        this.graph.content.on('tap', function (e) {
+            if (e.target === self.graph.content) {
+                self.ask(e.renderedPosition);
+            }
         });
     }
 
@@ -144,6 +163,8 @@ class CreateEdgeForm extends CreateForm {
         let data = this.form.getData();
         if (data.hasOwnProperty('bidirectional') && data.bidirectional === 'on') {
             data.bidirectional = true;
+        } else {
+            data.bidirectional = false;
         }
         this.graph.addEdge({'data': data, source: this.tempData.source, target: this.tempData.target});
         this._reset();
@@ -166,7 +187,11 @@ class Form {
         this._content = value;
     }
 
-    getData() {
+    getData(plain = false) {
+        if (plain) {
+            return this.content.serialize();
+        }
+
         let result = this.content.serializeArray().reduce((a, x) => ({...a, [x.name]: x.value}), {});
         Object.keys(result).forEach(key => {
             let dotNotation = key.split('.');
@@ -213,7 +238,7 @@ class Graph {
     _edgeTooltipTemplate;
     _layout;
 
-    constructor(container, graphOptions, nodeTooltipTemplate, edgeTooltipTemplate, layout = 'cose') {
+    constructor(container, graphOptions, nodeTooltipTemplate, edgeTooltipTemplate, layout = 'breadthfirst') {
         graphOptions.container = container;
         graphOptions.layout = {name: layout}; // TODO: Define graph layout here with options, then only allow to run it (re-layout graph)
         this._content = cytoscape(graphOptions);
@@ -221,6 +246,13 @@ class Graph {
         this._nodeTooltipTemplate = nodeTooltipTemplate;
         this._edgeTooltipTemplate = edgeTooltipTemplate;
         this._layout = layout;
+
+        this.content.on('remove', 'node, edge', function (e) {
+            let tippyTooltip = e.target.scratch('tooltip');
+            if (tippyTooltip) {
+                tippyTooltip.destroy();
+            }
+        });
     }
 
     get content() {
@@ -288,7 +320,7 @@ class Graph {
 
     _attachTooltip(element) {
         let self = this;
-        return tippy(element.popperRef(), {
+        let tippyTooltip = tippy(element.popperRef(), {
             content: Utils.recursiveRendering(element.isNode() ? self.nodeTooltipTemplate : self.edgeTooltipTemplate, element.data()),
             trigger: 'manual',
             arrow: true,
@@ -297,7 +329,9 @@ class Graph {
             sticky: true,
             interactive: true,
             zIndex: 5
-        }).show();
+        });
+        element.scratch('tooltip', tippyTooltip);
+        return tippyTooltip.show();
     }
 
     runLayout() {
@@ -356,9 +390,63 @@ class Utils {
     }
 }
 
-$(function () {
-    const solverAPI = 'http://localhost:8080/solve';
+class SiteWhereLoader extends ModalForm {
+    _resourcesGraph;
+    constructor(container, resourcesGraph) {
+        super(container);
+        this._resourcesGraph = resourcesGraph;
+    }
 
+    get resourcesGraph() {
+        return this._resourcesGraph;
+    }
+
+    generate() {
+        let self = this;
+        let replaceNodes = self.form.getData().replace || false;
+        fetch(`${API}/integration/sitewhere/devices?${this.form.getData(true)}`, {
+            method: 'GET', // *GET, POST, PUT, DELETE, etc.
+            mode: 'cors', // no-cors, cors, *same-origin
+        })
+            .then(response => response.json())
+            .then(response => {
+                if (replaceNodes) {
+                    self.resourcesGraph.clear();
+                }
+                response.cloud.forEach(resource => {
+                    self.resourcesGraph.addNode({
+                        data: {
+                            id: resource.id,
+                            label: resource.token,
+                            costs: {},
+                            capacity: resource.capacity,
+                            placement: "cloud"
+                        }
+                    });
+                });
+                response.edge.forEach(resource => {
+                    self.resourcesGraph.addNode({
+                        data: {
+                            id: resource.id,
+                            label: resource.token,
+                            costs: {},
+                            capacity: resource.capacity,
+                            placement: "edge"
+                        }
+                    });
+                });
+                self.resourcesGraph.runLayout();
+            })
+            .catch(reason => {
+                console.log(reason);
+            });
+        return this;
+    }
+}
+
+const API = 'http://localhost:8080';
+
+$(function () {
     let nodesGraph = new Graph(
         $('#nodes-graph'),
         {
@@ -607,7 +695,6 @@ $(function () {
         resourcesGraph.runLayout();
     });
 
-
     let costsForm = new Form($('#costs-form'));
     costsForm.content.submit(function (e) {
         e.preventDefault();
@@ -633,7 +720,7 @@ $(function () {
         let requestNum = resultsTable.find('tr:not(.empty)').length + 1;
         let resultRow = $(`<tr><th scope="row">${requestNum}</th><td>${startTime.toLocaleString()}</td><td>&mdash;</td><td class="solution">Processing...</td><td>Submitted</td></tr>`).insertAfter(resultsTable.find('tr:last'));
         resultsTable.find('tr.empty').remove();
-        fetch(solverAPI, {
+        fetch(`${API}/solve`, {
             method: 'POST', // *GET, POST, PUT, DELETE, etc.
             mode: 'cors', // no-cors, cors, *same-origin
             headers: {
@@ -670,4 +757,6 @@ $(function () {
         nodesGraph.clear();
         resourcesGraph.clear();
     });
+
+    let siteWhere = new SiteWhereLoader($('#load-sitewhere-modal'), resourcesGraph);
 });

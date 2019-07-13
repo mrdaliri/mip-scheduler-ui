@@ -50,7 +50,7 @@
             <p class="lead">Design your queries and dependencies</p>
             <div class="card">
                 <div class="graph card-img-top" id="nodes-graph"></div>
-                <div class="card-footer">
+                <div class="card-body">
                     <button type="button" class="btn btn-block btn-info" id="nodes-graph-layout">Re-layout graph</button>
                 </div>
             </div>
@@ -64,8 +64,9 @@
             <p class="lead">Define your resources and links</p>
             <div class="card">
                 <div class="graph card-img-top" id="resources-graph"></div>
-                <div class="card-footer">
+                <div class="card-body">
                     <button type="button" class="btn btn-block btn-info" id="resources-graph-layout">Re-layout graph</button>
+                    <button type="button" class="btn btn-block btn-success" id="load-sitewhere" data-toggle="modal" data-target="#load-sitewhere-modal">Load resources from SiteWhere</button>
                 </div>
             </div>
         </div>
@@ -342,6 +343,60 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" tabindex="5">Cancel</button>
                 <button type="button" class="btn btn-primary submit" tabindex="4">Create link</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="load-sitewhere-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Connect to SiteWhere</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="form-group">
+                        <label for="sitewhere-instance" class="col-form-label">Instance Address:</label>
+                        <input type="url" class="form-control" id="sitewhere-instance" name="instance" required tabindex="1" value="http://139.59.139.241:30746" placeholder="http://IP:PORT">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="sitewhere-username" class="col-form-label">Username:</label>
+                            <input type="text" class="form-control" id="sitewhere-username" name="username" required tabindex="2">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="sitewhere-password" class="col-form-label">Password:</label>
+                            <input type="password" class="form-control" id="sitewhere-password" name="password" required tabindex="3">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="sitewhere-tenant-token" class="col-form-label">Tenant Token:</label>
+                            <input type="text" class="form-control" id="sitewhere-tenant-token" name="tenantToken" required tabindex="4" value="default">
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="sitewhere-tenant-auth" class="col-form-label">Tenant Auth:</label>
+                            <input type="text" class="form-control" id="sitewhere-tenant-auth" name="tenantAuth" required tabindex="5" value="sitewhere1234567890">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-switch">
+                            <input class="custom-control-input" type="checkbox" id="sitewhere-replace" name="replace" tabindex="6">
+                            <label class="custom-control-label" for="sitewhere-replace">
+                                Replace current resources
+                            </label>
+                        </div>
+                    </div>
+                    <input type="submit" class="d-none">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" tabindex="8">Cancel</button>
+                <button type="button" class="btn btn-primary submit" tabindex="7">Fetch</button>
             </div>
         </div>
     </div>
