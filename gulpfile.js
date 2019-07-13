@@ -1,32 +1,3 @@
-// const {src, dest, watch, series, parallel} = require('gulp');
-// const sass = require('gulp-sass');
-// const browserSync = require('browser-sync').create();
-//
-// function buildStyles() {
-//     return src('app/scss/**/*.scss') // Gets all files ending with .scss in app/scss and children dirs
-//         .pipe(sass())
-//         .pipe(dest('app/css'))
-//         .pipe(browserSync.reload({stream: true}))
-// }
-//
-// function serve(done) {
-//     browserSync.init({
-//         server: "./app",
-//         open: false
-//     });
-//     done();
-// }
-//
-// function watchAssets() {
-//     watch(
-//         ["app/*.html", "app/js/*.js", 'app/scss/*.scss'],
-//         {events: 'all', ignoreInitial: false},
-//         series(buildStyles)
-//     );
-// }
-//
-// exports.default = parallel(serve, watchAssets);
-
 const {src, dest, watch, series} = require('gulp');
 const sass = require('gulp-sass');
 const server = require('browser-sync').create();
